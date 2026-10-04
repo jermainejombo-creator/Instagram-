@@ -16,7 +16,6 @@ import {
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { Ionicons } from '@expo/vector-icons';
-import * as ImagePicker from 'expo-image-picker';
 
 const { width } = Dimensions.get('window');
 const ACCENT = '#7c3aed';
@@ -460,6 +459,8 @@ function InsightsModal({ reel, visible, onClose, onChange }) {
   };
   const pickImage = async () => {
     try {
+      // loaded only when used, so a problem with the picker can never stop the app from opening
+      const ImagePicker = require('expo-image-picker');
       const res = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.7 });
       if (!res.canceled && res.assets && res.assets[0]) set({ uri: res.assets[0].uri });
     } catch (e) {
@@ -614,7 +615,41 @@ function InsightsModal({ reel, visible, onClose, onChange }) {
 
 /* ---------- app ---------- */
 
-export default function App() {
+class ErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { error: null };
+  }
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <ScrollView style={{ flex: 1, backgroundColor: '#fff' }} contentContainerStyle={{ padding: 24, paddingTop: 70 }}>
+          <Text style={{ fontSize: 20, fontWeight: '800', color: '#b91c1c' }}>Lumina hit an error</Text>
+          <Text style={{ marginTop: 12 }} selectable>
+            {String(this.state.error && this.state.error.message)}
+          </Text>
+          <Text style={{ marginTop: 12, color: '#666', fontSize: 11 }} selectable>
+            {String(this.state.error && this.state.error.stack).slice(0, 1500)}
+          </Text>
+        </ScrollView>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default function Root() {
+  return (
+    <ErrorBoundary>
+      <AppMain />
+    </ErrorBoundary>
+  );
+}
+
+function AppMain() {
   const [tab, setTab] = useState('home');
   const [posts, setPosts] = useState(INITIAL_POSTS);
   const [openPostId, setOpenPostId] = useState(null);
